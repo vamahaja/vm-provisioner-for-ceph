@@ -1,0 +1,139 @@
+---
+vmware:
+  host: foo-host
+  username: foo-user
+  password: foo-password
+
+  datacenter: FOO-DATACENTER-NAME
+  cluster: FOO-CLUSTER-NAME
+  resource_pool: foo_resource_pool
+  folder: foo_folder
+  datastore: foo-datastore-name
+
+  vm_network: "VM Network"
+  vm_templates:
+  - vm-template-copy1
+  - vm-template-copy2
+  - vm-template-copy3
+
+  vm_parameters:
+    grafana-server:
+      names:
+      - dev-grafana-server-0
+      num_cpus: 1
+      ram_mb: 16384
+      system_disks_gb: [60, 40, 40]
+      system_disks_type: thin
+    mon:
+      names:
+      - dev-mon-1
+      - dev-mon-2
+      num_cpus: 2
+      ram_mb: 32768
+      system_disks_gb: [60, 40, 40]
+      system_disks_type: thin
+    osds:
+      names:
+      - dev-osds-1
+      - dev-osds-2
+      - dev-osds-3
+      num_cpus: 1
+      ram_mb: 16384
+      system_disks_gb: [60, 40, 40]
+      system_disks_type: thin
+      storage_disks_gb: [10, 20, 10]
+      storage_disks_type: thin
+    mgrs:
+      names:
+      - dev-mgrs-1
+      - dev-mgrs-2
+      - dev-mgrs-3
+      num_cpus: 1
+      ram_mb: 16384
+      system_disks_gb: [60, 40, 40]
+      system_disks_type: thin
+    client:
+      names:
+      - dev-client-1
+      - dev-client-2
+      - dev-client-3
+      num_cpus: 1
+      ram_mb: 16384
+      system_disks_gb: [60, 40, 40]
+      system_disks_type: thin
+vm:
+  dns:
+    update_remote_dns_servers: yes
+    servers:
+    - type: dnsmasq
+      config_filepath: "/etc/dnsmasq.d/dt-optional-file-name.conf"
+      server_username: root
+      server_hostname: 192.168.0.1
+    - type: dnsmasq
+      server_hostname: 192.168.0.2
+  repo:
+    upstream:
+      skip: yes
+      subscription_server: subscription.foo.bar--can-be-empty-if-skipped
+      subscription_baseurl: http://cdn.redhat.com/
+      subscription_user: foo@bar.quuz--can-be-empty-if-skipped
+      subscription_pass: FooPassword--can-be-empty-if-skipped
+      subscription_pool: FooUser--can-be-empty-if-skipped
+      repositories_to_enable:
+        all:
+        - rhel-7-server-rpms
+        - rhel-7-server-extras-rpms
+        - rhel-7-fast-datapath-rpms
+        grafana-server:
+        mon:
+        osds:
+        mgrs:
+        client:
+    downstream:
+      skip: no
+      repositories_to_enable:
+        all:
+        - name: 'downstream-fake-repo-common-for-all-nodes'
+          url: 'http://quuz.zuuq/x86_64/os/'
+          cost: 1000
+        grafana-server:
+        mon:
+        - name: 'downstream-fake-repo-for-mon-nodes'
+          url: 'http://quuz.zuuq/x86_64/os/'
+          cost: 990
+        osds:
+        - name: 'downstream-fake-repo-for-osds-nodes-1'
+          url: 'http://foo.oof/x86_64/os/'
+          cost: 990
+        mgrs:
+        client:
+  yum:
+    update: yes
+    reboot_after_update: yes
+    sleep_after_reboot_sec: 30
+  uninstall_packages:
+    all:
+    - fake-package-1
+    - fake-package-2
+    grafana-server:
+    mon: []
+    osds: []
+    mgrs: []
+    client: []
+  install_packages:
+    all:
+    - sos
+    grafana-server:
+    mon: []
+    osds: []
+    mgrs: []
+    client: []
+  setup_and_configuration:
+    setup_common_packages: yes
+    setup_ntp: yes
+    setup_vmware_tools: yes
+    mount_disks:
+    - disk_path: "/dev/sdb"
+      mount_point: "/var"
+      name_prefix: "var"
+      fstype: "xfs"
