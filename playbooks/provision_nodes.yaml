@@ -9,7 +9,7 @@
   - name: Read and validate config file
     dt_validate_vms_provisioning_config:
       path: "{{ config_filepath }}"
-      check_groups: ['vm', 'vmware']
+      check_groups: ['vm', 'vcenter']
     register: config_output
   - name:
     set_fact:
@@ -20,25 +20,25 @@
 
   - name: Set username and password
     set_fact:
-      vmware_host: "{{ config.vmware.host}}"
-      vmware_username: "{{ config.vmware.username }}"
-      vmware_password: "{{ config.vmware.password }}"
-      vmware_datacenter : "{{ config.vmware.datacenter }}"
-      vmware_cluster : "{{ config.vmware.cluster }}"
-      vmware_resource_pool : "{{ config.vmware.resource_pool }}"
-      vmware_folder : "{{ config.vmware.folder }}"
-      vmware_datastore : "{{ config.vmware.datastore }}"
-      vmware_vm_network : "{{ config.vmware.vm_network }}"
+      vcenter_host: "{{ config.vcenter.host}}"
+      vcenter_username: "{{ config.vcenter.username }}"
+      vcenter_password: "{{ config.vcenter.password }}"
+      vcenter_datacenter : "{{ config.vcenter.datacenter }}"
+      vcenter_cluster : "{{ config.vcenter.cluster }}"
+      vcenter_resource_pool : "{{ config.vcenter.resource_pool }}"
+      vcenter_folder : "{{ config.vcenter.folder }}"
+      vcenter_datastore : "{{ config.vcenter.datastore }}"
+      vcenter_vm_network : "{{ config.vcenter.vm_network }}"
 
-  - name: Check if all vmware configs are defined
+  - name: Check if all vCenter configs are defined
     fail:
-      msg: "Mandatory vmware parameter(s) (is|are) not defined"
+      msg: "Mandatory vcenter parameter(s) (is|are) not defined"
     when: item | length == 0
     with_items:
-    - "{{ vmware_host }}"
-    - "{{ vmware_datacenter }}"
-    - "{{ vmware_cluster }}"
-    - "{{ vmware_resource_pool }}"
-    - "{{ vmware_folder }}"
-    - "{{ vmware_datastore }}"
-    - "{{ vmware_vm_network }}"
+    - "{{ vcenter_host }}"
+    - "{{ vcenter_datacenter }}"
+    - "{{ vcenter_cluster }}"
+    - "{{ vcenter_resource_pool }}"
+    - "{{ vcenter_folder }}"
+    - "{{ vcenter_datastore }}"
+    - "{{ vcenter_vm_network }}"
