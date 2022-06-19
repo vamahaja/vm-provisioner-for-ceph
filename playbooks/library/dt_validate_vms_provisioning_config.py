@@ -69,7 +69,7 @@ def validate_config_structure(module, config):
         },
     }
     config_schema_dict = {
-        "vmware": {
+        "vcenter": {
             schema.Optional("host", default=""): str,
             schema.Optional("username", default=""): str,
             schema.Optional("password", default=""): str,

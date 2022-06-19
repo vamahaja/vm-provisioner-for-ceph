@@ -1,5 +1,5 @@
 ---
-vmware:
+vcenter:
   host: foo-host
   username: foo-user
   password: foo-password
