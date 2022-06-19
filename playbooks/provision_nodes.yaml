@@ -3,6 +3,8 @@
   connection: local
   gather_facts: no
   run_once: yes
+  vars:
+    ceph_nodes: {}
   tasks:
 
   # Validate config file
@@ -48,3 +50,153 @@
       name: create_vcenter_resource_pool_and_dir
     vars:
       config: "{{ config }}"
+
+  # Calculate data
+  - name: Calculate data for grafana_server nodes
+    set_fact:
+      ceph_nodes: "{{ ceph_nodes | default({}) | combine({
+        item.0: {
+          'group': 'grafana_server',
+          'template': config.vcenter.vm_templates[(ceph_nodes|default({})|length) % (
+            config.vcenter.vm_templates | length)],
+          'num_cpus': config.vcenter.vm_parameters.grafana_server.num_cpus,
+          'ram_mb': config.vcenter.vm_parameters.grafana_server.ram_mb,
+          'disks': ((ceph_nodes|default({}))[item.0] | default({'disks': []}))['disks'] + [{
+            'size_gb': item.1,
+            'type': config.vcenter.vm_parameters.grafana_server.system_disks_type,
+            'datastore': vcenter_datastore,
+          }]
+        }
+      }, recursive=True) }}"
+    with_nested:
+    - "{{ config.vcenter.vm_parameters.grafana_server.names }}"
+    - "{{ config.vcenter.vm_parameters.grafana_server.system_disks_gb }}"
+    when: config.vcenter.vm_parameters.grafana_server.names
+
+  - name: Calculate data for mon nodes
+    set_fact:
+      ceph_nodes: "{{ ceph_nodes | default({}) | combine({
+        item.0: {
+          'group': 'mon',
+          'template': config.vcenter.vm_templates[(ceph_nodes|default({})|length) % (
+            config.vcenter.vm_templates | length)],
+          'num_cpus': config.vcenter.vm_parameters.mon.num_cpus,
+          'ram_mb': config.vcenter.vm_parameters.mon.ram_mb,
+          'disks': ((ceph_nodes|default({}))[item.0] | default({'disks': []}))['disks'] + [{
+            'size_gb': item.1,
+            'type': config.vcenter.vm_parameters.mon.system_disks_type,
+            'datastore': vcenter_datastore,
+          }]
+        }
+      }, recursive=True) }}"
+    with_nested:
+    - "{{ config.vcenter.vm_parameters.mon.names }}"
+    - "{{ config.vcenter.vm_parameters.mon.system_disks_gb }}"
+    when: config.vcenter.vm_parameters.mon.names
+
+  - name: Calculate data for osds nodes
+    set_fact:
+      ceph_nodes: "{{ ceph_nodes | default({}) | combine({
+        item.0: {
+          'group': 'osds',
+          'template': config.vcenter.vm_templates[(ceph_nodes|default({})|length) % (
+            config.vcenter.vm_templates | length)],
+          'num_cpus': config.vcenter.vm_parameters.osds.num_cpus,
+          'ram_mb': config.vcenter.vm_parameters.osds.ram_mb,
+          'disks': ((ceph_nodes|default({}))[item.0] | default({'disks': []}))['disks'] + [{
+            'size_gb': item.1,
+            'type': (
+              (( ((ceph_nodes|default({}))[item.0] | default({'disks': []}))['disks'] | length < (
+                  config.vcenter.vm_parameters.osds.system_disks_gb | length) ) | ternary(
+                config.vcenter.vm_parameters.osds.system_disks_type,
+                config.vcenter.vm_parameters.osds.storage_disks_type))
+            ),
+            'datastore': vcenter_datastore,
+          }]
+        }
+      }, recursive=True) }}"
+    with_nested:
+    - "{{ config.vcenter.vm_parameters.osds.names }}"
+    - "{{ config.vcenter.vm_parameters.osds.system_disks_gb +
+          config.vcenter.vm_parameters.osds.storage_disks_gb}}"
+    when: config.vcenter.vm_parameters.osds.names
+
+  - name: Calculate data for mgr nodes
+    set_fact:
+      ceph_nodes: "{{ ceph_nodes | default({}) | combine({
+        item.0: {
+          'group': 'mgrs',
+          'template': config.vcenter.vm_templates[(ceph_nodes|default({})|length) % (
+            config.vcenter.vm_templates | length)],
+          'num_cpus': config.vcenter.vm_parameters.mgrs.num_cpus,
+          'ram_mb': config.vcenter.vm_parameters.mgrs.ram_mb,
+          'disks': ((ceph_nodes|default({}))[item.0] | default({'disks': []}))['disks'] + [{
+            'size_gb': item.1,
+            'type': config.vcenter.vm_parameters.mgrs.system_disks_type,
+            'datastore': vcenter_datastore,
+          }]
+        }
+      }, recursive=True) }}"
+    with_nested:
+    - "{{ config.vcenter.vm_parameters.mgrs.names }}"
+    - "{{ config.vcenter.vm_parameters.mgrs.system_disks_gb }}"
+    when: config.vcenter.vm_parameters.mgrs.names
+
+  - name: Calculate data for client nodes
+    set_fact:
+      ceph_nodes: "{{ ceph_nodes | default({}) | combine({
+        item.0: {
+          'group': 'client',
+          'template': config.vcenter.vm_templates[(ceph_nodes|default({})|length) % (
+            config.vcenter.vm_templates | length)],
+          'num_cpus': config.vcenter.vm_parameters.client.num_cpus,
+          'ram_mb': config.vcenter.vm_parameters.client.ram_mb,
+          'disks': ((ceph_nodes|default({}))[item.0] | default({'disks': []}))['disks'] + [{
+            'size_gb': item.1,
+            'type': config.vcenter.vm_parameters.client.system_disks_type,
+            'datastore': vcenter_datastore,
+          }]
+        }
+      }, recursive=True) }}"
+    with_nested:
+    - "{{ config.vcenter.vm_parameters.client.names }}"
+    - "{{ config.vcenter.vm_parameters.client.system_disks_gb }}"
+    when: config.vcenter.vm_parameters.client.names
+
+  # Create VMs using calculated data
+  - name: Create all the requested VMs
+    vmware_guest:
+      hostname: "{{ vcenter_host }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: False
+      name: "{{ item.key }}"
+      cluster: "{{ vcenter_cluster }}"
+      datacenter: "{{ vcenter_datacenter }}"
+      resource_pool: "{{ vcenter_resource_pool }}"
+      template: "{{ item.value.template }}"
+      state: poweredon
+      wait_for_ip_address: true
+      folder: "/{{ vcenter_folder }}"
+      annotation: "{{ item.key }}"
+      disk: "{{ item.value.disks }}"
+      hardware:
+        num_cpus: "{{ item.value.num_cpus }}"
+        memory_mb: "{{ item.value.ram_mb }}"
+      networks: "[{'name': '{{ vcenter_vm_network }}', 'type': 'dhcp' }]"
+      customization:
+        hostname: "{{ item.key }}"
+    with_dict: "{{ ceph_nodes }}"
+    async: "{{ 6 * 600 }}"
+    poll: 0
+    register: async_vms_creation
+
+  - name: Check async status of all the VMs
+    async_status:
+      jid: "{{ async_result_item.ansible_job_id }}"
+    with_items: "{{ async_vms_creation.results }}"
+    loop_control:
+      loop_var: "async_result_item"
+    register: async_poll_results
+    until: async_poll_results.finished
+    retries: "{{ 6 * 100 }}"
