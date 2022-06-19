@@ -17,7 +17,7 @@ vcenter:
   - vm-template-copy3
 
   vm_parameters:
-    grafana-server:
+    grafana_server:
       names:
       - dev-grafana-server-0
       num_cpus: 1
@@ -84,7 +84,7 @@ vm:
         - rhel-7-server-rpms
         - rhel-7-server-extras-rpms
         - rhel-7-fast-datapath-rpms
-        grafana-server:
+        grafana_server:
         mon:
         osds:
         mgrs:
@@ -96,7 +96,7 @@ vm:
         - name: 'downstream-fake-repo-common-for-all-nodes'
           url: 'http://quuz.zuuq/x86_64/os/'
           cost: 1000
-        grafana-server:
+        grafana_server:
         mon:
         - name: 'downstream-fake-repo-for-mon-nodes'
           url: 'http://quuz.zuuq/x86_64/os/'
@@ -115,7 +115,7 @@ vm:
     all:
     - fake-package-1
     - fake-package-2
-    grafana-server:
+    grafana_server:
     mon: []
     osds: []
     mgrs: []
@@ -123,7 +123,7 @@ vm:
   install_packages:
     all:
     - sos
-    grafana-server:
+    grafana_server:
     mon: []
     osds: []
     mgrs: []
