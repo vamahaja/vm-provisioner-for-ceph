@@ -42,3 +42,9 @@
     - "{{ vcenter_folder }}"
     - "{{ vcenter_datastore }}"
     - "{{ vcenter_vm_network }}"
+
+  - name: Create resource pool and directory if absent
+    import_role:
+      name: create_vcenter_resource_pool_and_dir
+    vars:
+      config: "{{ config }}"
