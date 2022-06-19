@@ -1,0 +1,44 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  run_once: yes
+  tasks:
+
+  # Validate config file
+  - name: Read and validate config file
+    dt_validate_vms_provisioning_config:
+      path: "{{ config_filepath }}"
+      check_groups: ['vm', 'vmware']
+    register: config_output
+  - name:
+    set_fact:
+      config: "{{ config_output.config }}"
+  - name: DEBUG. Print parsed config file data
+    debug:
+      msg: "{{ config }}"
+
+  - name: Set username and password
+    set_fact:
+      vmware_host: "{{ config.vmware.host}}"
+      vmware_username: "{{ config.vmware.username }}"
+      vmware_password: "{{ config.vmware.password }}"
+      vmware_datacenter : "{{ config.vmware.datacenter }}"
+      vmware_cluster : "{{ config.vmware.cluster }}"
+      vmware_resource_pool : "{{ config.vmware.resource_pool }}"
+      vmware_folder : "{{ config.vmware.folder }}"
+      vmware_datastore : "{{ config.vmware.datastore }}"
+      vmware_vm_network : "{{ config.vmware.vm_network }}"
+
+  - name: Check if all vmware configs are defined
+    fail:
+      msg: "Mandatory vmware parameter(s) (is|are) not defined"
+    when: item | length == 0
+    with_items:
+    - "{{ vmware_host }}"
+    - "{{ vmware_datacenter }}"
+    - "{{ vmware_cluster }}"
+    - "{{ vmware_resource_pool }}"
+    - "{{ vmware_folder }}"
+    - "{{ vmware_datastore }}"
+    - "{{ vmware_vm_network }}"
