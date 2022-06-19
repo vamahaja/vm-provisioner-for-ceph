@@ -60,11 +60,11 @@ def validate_config_structure(module, config):
                '"space" symbols.']
         return input_string
 
-    node_types = ("all", "grafana-server", "mon", "osds", "mgrs", "client")
+    node_types = ("all", "grafana_server", "mon", "osds", "mgrs", "client")
     vm_repo_downstream_default = {
         "skip": True,
         "repositories_to_enable": {
-            "all": [], "grafana-server": [], "mon": [], "osds": [],
+            "all": [], "grafana_server": [], "mon": [], "osds": [],
             "mgrs": [], "client": [],
         },
     }
@@ -145,7 +145,7 @@ def validate_config_structure(module, config):
                                     default="not_set"): schema.Or(
                         schema.And(str, len), None),
                     schema.Optional("repositories_to_enable",
-                                    default={"all": [], "grafana-server": [],
+                                    default={"all": [], "grafana_server": [],
                                              "mon": [], "osds": [],
                                              "mgrs": [], "client": [],}): schema.Or({
                         schema.Optional(node_type, default=[]): schema.Or(
@@ -186,7 +186,7 @@ def validate_config_structure(module, config):
             },
             "uninstall_packages": schema.Or(
                 schema.Use(lambda o: (
-                    {"all": [], "grafana-server": [], "mon": [], "osds": [],
+                    {"all": [], "grafana_server": [], "mon": [], "osds": [],
                         "mgrs": [], "client": [],}
                     if (o is None or o == {}) else {}[
                         "Only 'None' or 'dict' objects are allowed"]
@@ -203,7 +203,7 @@ def validate_config_structure(module, config):
             ),
             "install_packages": schema.Or(
                 schema.Use(lambda o: (
-                    {"all": [], "grafana-server": [], "mon": [], "osds": [],
+                    {"all": [], "grafana_server": [], "mon": [], "osds": [],
                         "mgrs": [], "client": [],}
                     if o is None else {}[
                         "Only 'None' or 'dict' objects are allowed"]
