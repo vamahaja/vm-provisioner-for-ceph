@@ -200,3 +200,89 @@
     register: async_poll_results
     until: async_poll_results.finished
     retries: "{{ 6 * 100 }}"
+
+  - name: Read info of newly created VMs
+    vmware_guest_tools_wait:
+      hostname: "{{ vcenter_host }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      folder: "/{{ vcenter_folder }}"
+      validate_certs: False
+      uuid: "{{ item.instance.hw_product_uuid }}"
+    with_items: "{{ async_poll_results.results }}"
+    register: facts
+
+  - name: Map node names and their IP addresses
+    set_fact:
+      hostnames_ip_mapping: "{{ hostnames_ip_mapping | default({}) | combine(
+        {item.instance.hw_name: item.instance.hw_eth0.ipaddresses|ipv4|first},
+        recursive=True
+      ) }}"
+    with_items: "{{ facts.results }}"
+
+  - name: Update routing on the localhost
+    import_role:
+      name: add-routing-info-to-etc-hosts
+    vars:
+      hostnames_ip_mapping: "{{ hostnames_ip_mapping }}"
+
+  # Add references to the just provisioned VMs
+  - name: Add grafana_server nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_grafana_server
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.grafana_server.names }}"
+    when:
+    - "'dt_grafana_server' not in groups"
+  - name: Add mon nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_mon
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.mon.names }}"
+    when:
+    - "'dt_mon' not in groups"
+  - name: Add osds nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_osds
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.osds.names }}"
+    when:
+    - "'dt_osds' not in groups"
+  - name: Add mgrs nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_mgrs
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.mgrs.names }}"
+    when:
+    - "'dt_mgrs' not in groups"
+  - name: Add client nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_client
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.client.names }}"
+    when:
+    - "'dt_client' not in groups"
+
+  - name: Wait for SSH availability of newly provisioned VMs
+    wait_for:
+      host: "{{ item.value }}"
+      port: 22
+      delay: 0
+      timeout: 420
+      connect_timeout: 5
+      state: started
+    with_dict: "{{ hostnames_ip_mapping }}"
+
+- name: Update all the Ceph nodes with routing info about each other
+  hosts: dt_grafana_server, dt_mon, dt_osds, dt_mgrs, dt_client
+  gather_facts: no
+  roles:
+  - add-routing-info-to-etc-hosts
+  - extend-root-volume
+  vars:
+    hostnames_ip_mapping: "{{ hostvars['localhost'].hostnames_ip_mapping }}"
