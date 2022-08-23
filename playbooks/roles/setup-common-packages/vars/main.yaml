@@ -1,0 +1,22 @@
+rhel7_packages:
+  - wget
+  - git-core
+  - python-virtualenv
+  - python-nose
+  - ntp
+  - python2-pip
+  - chrony
+
+all_packages:
+  - wget
+  - git-core
+  - python3-devel
+  - chrony
+  - yum-utils
+  - net-tools
+  - lvm2
+  - podman
+  - net-snmp-utils
+  - net-snmp
+  - kernel-modules-extra
+  - iproute-tc

@@ -1,0 +1,214 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  run_once: yes
+  tasks:
+
+  # Validate config file
+  - name: Read and validate config file
+    dt_validate_vms_provisioning_config:
+      path: "{{ config_filepath }}"
+    register: config_output
+  - name: Save config to a var
+    set_fact:
+      config: "{{ config_output.config }}"
+
+  - name: Save shortcut to one of the config vars
+    set_fact:
+      cfg_upstream: "{{ config.vm.repo.upstream }}"
+      cfg_downstream_repos: "{{
+        config.vm.repo.downstream.repositories_to_enable }}"
+      cfg_vm_setup: "{{ config.vm.setup_and_configuration }}"
+
+  # Make sure we have reference to the provisioned VMs
+  - name: Add 'grafana_server' nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_grafana_server
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.grafana_server.names }}"
+    when:
+    - "'dt_grafana_server' not in groups"
+  - name: Add 'mon' nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_mon
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.mon.names }}"
+    when:
+    - "'dt_mon' not in groups"
+  - name: Add 'osds' nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_osds
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.osds.names }}"
+    when:
+    - "'dt_osds' not in groups"
+  - name: Add 'mgrs' nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_mgrs
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.mgrs.names }}"
+    when:
+    - "'dt_mgrs not in groups"
+  - name: Add 'client' nodes if not added yet
+    add_host:
+      name: "{{ item }}"
+      groups: dt_client
+      ansible_user: root
+    with_items: "{{ config.vcenter.vm_parameters.client.names }}"
+    when:
+    - "'dt_client' not in groups"
+
+# Calculate repo vars for all the OCP nodes
+- hosts: dt_grafana_server
+  gather_facts: no
+  tasks:
+  - name: Define set of vars for 'grafana_server' nodes
+    set_fact:
+      hostvar_repositories_to_enable: "{{
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.all | union(
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.grafana_server) | unique
+      }}"
+      hostvar_repo_list: "{{
+        hostvars['localhost'].cfg_downstream_repos.all | union(
+        hostvars['localhost'].cfg_downstream_repos.grafana_server)
+      }}"
+      hostvar_uninstall_packages_list: "{{
+        hostvars['localhost'].config.vm.uninstall_packages.all | union(
+        hostvars['localhost'].config.vm.uninstall_packages.grafana_server) | unique
+      }}"
+      hostvar_install_packages_list: "{{
+        hostvars['localhost'].config.vm.install_packages.all | union(
+        hostvars['localhost'].config.vm.install_packages.grafana_server) | unique
+      }}"
+
+- hosts: dt_mon
+  gather_facts: no
+  tasks:
+  - name: Define set of vars for 'mon' nodes
+    set_fact:
+      hostvar_repositories_to_enable: "{{
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.all | union(
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.mon) | unique
+      }}"
+      hostvar_repo_list: "{{
+        hostvars['localhost'].cfg_downstream_repos.all | union(
+        hostvars['localhost'].cfg_downstream_repos.mon)
+      }}"
+      hostvar_uninstall_packages_list: "{{
+        hostvars['localhost'].config.vm.uninstall_packages.all | union(
+        hostvars['localhost'].config.vm.uninstall_packages.mon) | unique
+      }}"
+      hostvar_install_packages_list: "{{
+        hostvars['localhost'].config.vm.install_packages.all | union(
+        hostvars['localhost'].config.vm.install_packages.mon) | unique
+      }}"
+
+- hosts: dt_osds
+  gather_facts: no
+  tasks:
+  - name: Define set of vars for 'osds' nodes
+    set_fact:
+      hostvar_repositories_to_enable: "{{
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.all | union(
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.osds) | unique
+      }}"
+      hostvar_repo_list: "{{
+        hostvars['localhost'].cfg_downstream_repos.all | union(
+        hostvars['localhost'].cfg_downstream_repos.osds)
+      }}"
+      hostvar_uninstall_packages_list: "{{
+        hostvars['localhost'].config.vm.uninstall_packages.all | union(
+        hostvars['localhost'].config.vm.uninstall_packages.osds) | unique
+      }}"
+      hostvar_install_packages_list: "{{
+        hostvars['localhost'].config.vm.install_packages.all | union(
+        hostvars['localhost'].config.vm.install_packages.osds) | unique
+      }}"
+
+- hosts: dt_mgrs
+  gather_facts: no
+  tasks:
+  - name: Define set of vars for 'mgrs' nodes
+    set_fact:
+      hostvar_repositories_to_enable: "{{
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.all | union(
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.mgrs) | unique
+      }}"
+      hostvar_repo_list: "{{
+        hostvars['localhost'].cfg_downstream_repos.all | union(
+        hostvars['localhost'].cfg_downstream_repos.mgrs)
+      }}"
+      hostvar_uninstall_packages_list: "{{
+        hostvars['localhost'].config.vm.uninstall_packages.all | union(
+        hostvars['localhost'].config.vm.uninstall_packages.mgrs) | unique
+      }}"
+      hostvar_install_packages_list: "{{
+        hostvars['localhost'].config.vm.install_packages.all | union(
+        hostvars['localhost'].config.vm.install_packages.mgrs) | unique
+      }}"
+
+- hosts: dt_client
+  gather_facts: no
+  tasks:
+  - name: Define set of vars for 'client' nodes
+    set_fact:
+      hostvar_repositories_to_enable: "{{
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.all | union(
+        hostvars['localhost'].cfg_upstream.repositories_to_enable.client) | unique
+      }}"
+      hostvar_repo_list: "{{
+        hostvars['localhost'].cfg_downstream_repos.all | union(
+        hostvars['localhost'].cfg_downstream_repos.client)
+      }}"
+      hostvar_uninstall_packages_list: "{{
+        hostvars['localhost'].config.vm.uninstall_packages.all | union(
+        hostvars['localhost'].config.vm.uninstall_packages.client) | unique
+      }}"
+      hostvar_install_packages_list: "{{
+        hostvars['localhost'].config.vm.install_packages.all | union(
+        hostvars['localhost'].config.vm.install_packages.client) | unique
+      }}"
+
+# Downstream repositories
+- hosts: dt_grafana_server, dt_mon, dt_osds, dt_mgrs, dt_client
+  gather_facts: no
+  roles:
+  - name: repos-downstream
+    when: "not hostvars['localhost'].config.vm.repo.downstream.skip"
+  vars:
+    repo_list: "{{ hostvar_repo_list }}"
+
+# Upstream repositories
+- hosts: dt_grafana_server, dt_mon, dt_osds, dt_mgrs, dt_client
+  gather_facts: no
+  roles:
+  - role: repos-upstream
+    when: "not hostvars['localhost'].config.vm.repo.upstream.skip"
+  vars:
+    subscription_server: "{{ hostvars['localhost'].cfg_upstream.subscription_server }}"
+    subscription_baseurl: "{{ hostvars['localhost'].cfg_upstream.subscription_baseurl }}"
+    subscription_user: "{{ hostvars['localhost'].cfg_upstream.subscription_user }}"
+    subscription_pass: "{{ hostvars['localhost'].cfg_upstream.subscription_pass }}"
+    subscription_pool: "{{ hostvars['localhost'].cfg_upstream.subscription_pool }}"
+    repositories_to_enable: "{{ hostvar_repositories_to_enable }}"
+
+# Packages removal and installation
+- hosts: dt_grafana_server, dt_mon, dt_osds, dt_mgrs, dt_client
+  gather_facts: yes
+  roles:
+  - role: install-packages
+  vars:
+    uninstall_packages_list: "{{ hostvar_uninstall_packages_list }}"
+    install_packages_list: "{{ hostvar_install_packages_list }}"
+
+# Setup and installation plugins
+- hosts: dt_grafana_server, dt_mon, dt_osds, dt_mgrs, dt_client
+  gather_facts: no
+  roles:
+  - role: setup-common-packages
+    when: "hostvars['localhost'].config.vm.setup_and_configuration.setup_common_packages"
